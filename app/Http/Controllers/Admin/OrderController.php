@@ -30,6 +30,7 @@ class OrderController extends Controller
         'shipped' => 'paid',
         'paid' => 'processing',
         'processing' => 'new',
+        'cancelled' => 'new',
     ];
 
     private function authorizeOrderAccess(Order $order): void
@@ -223,6 +224,11 @@ class OrderController extends Controller
         if (in_array($order->status, ['paid', 'shipped', 'delivered'])
             && !auth()->user()->hasPermission('reverse_orders')) {
             abort(403, 'Only a superadmin or a user with the Reverse Paid Orders permission can reverse this order.');
+        }
+
+        if ($order->status === 'cancelled'
+            && !auth()->user()->hasPermission('restore_cancelled_orders')) {
+            abort(403, 'Only a superadmin or a user with the Restore Cancelled Orders permission can restore this order.');
         }
 
         $validated = $request->validate([

@@ -851,6 +851,14 @@
 
                 selectItem(item) {
                     this.close();
+                    this.query = '';
+                    this.results = [];
+                    this.exactMatch = false;
+                    this.mode = 'text';
+                    if (this._abortController) {
+                        this._abortController.abort();
+                        this._abortController = null;
+                    }
                     if (typeof openQuickViewData === 'function') {
                         openQuickViewData(item);
                     } else {

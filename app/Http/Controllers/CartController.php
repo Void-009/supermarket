@@ -15,11 +15,28 @@ class CartController extends Controller
     {
         $cartItems = $this->getCartItems();
 
-        $subtotal = $cartItems->sum(function ($cartItem) {
-            return $cartItem->item->effectivePrice() * $cartItem->quantity;
-        });
+        return view('cart.index', [
+            'cartItems' => $cartItems,
+            'subtotal' => $this->getCartTotal(),
+            'cartItemsJson' => $this->toJsonPayload($cartItems),
+        ]);
+    }
 
-        $cartItemsJson = $cartItems->map(function ($cartItem) {
+    public function items(): JsonResponse
+    {
+        $cartItems = $this->getCartItems();
+
+        return response()->json([
+            'success' => true,
+            'items' => $this->toJsonPayload($cartItems, false),
+            'count' => $this->getCartCount(),
+            'subtotal' => $this->getCartTotal(),
+        ]);
+    }
+
+    private function toJsonPayload($cartItems, bool $asJsonString = true)
+    {
+        $items = $cartItems->map(function ($cartItem) {
             return [
                 'id' => $cartItem->id,
                 'name' => $cartItem->item->name,
@@ -31,9 +48,13 @@ class CartController extends Controller
                 'quantity' => (int) $cartItem->quantity,
                 'max' => $cartItem->item->isVariation() ? null : (int) $cartItem->item->quantity,
             ];
-        })->values()->toJson(JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        })->values();
 
-        return view('cart.index', compact('cartItems', 'subtotal', 'cartItemsJson'));
+        if (! $asJsonString) {
+            return $items;
+        }
+
+        return $items->toJson(JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     }
 
     public function add(Request $request): JsonResponse

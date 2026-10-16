@@ -282,6 +282,141 @@ class AdminApiTest extends TestCase
             ->assertJsonPath('order.status', 'paid');
     }
 
+    public function test_admin_can_view_and_restore_cancelled_order(): void
+    {
+        $admin = $this->makeSuperadmin();
+        $customer = User::create([
+            'name' => 'Customer',
+            'email' => 'customer@test.com',
+            'password' => bcrypt('Password123'),
+            'role' => 'customer',
+            'is_active' => true,
+        ]);
+
+        $order = Order::create([
+            'user_id' => $customer->id,
+            'customer_name' => 'Customer',
+            'customer_phone' => '08012345678',
+            'delivery_method' => 'pickup',
+            'payment_method' => 'cash_on_delivery',
+            'status' => 'cancelled',
+            'total_amount' => 400,
+            'payment_status' => 'pending',
+            'payment_reference' => 'ORD-CANCELLED',
+            'delivery_fee' => 0,
+            'delivery_fee_status' => 'standard',
+        ]);
+
+        $headers = $this->adminHeaders($admin);
+
+        // Admin can still view a cancelled order and is offered a reverse path.
+        $this->getJson("/api/v1/admin/orders/{$order->id}", $headers)
+            ->assertOk()
+            ->assertJsonPath('order.status', 'cancelled')
+            ->assertJsonPath('prev_status', 'new');
+
+        // Admin can un-cancel (restore) it back to new.
+        $this->postJson("/api/v1/admin/orders/{$order->id}/reverse", ['status' => 'new'], $headers)
+            ->assertOk()
+            ->assertJsonPath('order.status', 'new');
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'new']);
+    }
+
+    public function test_restore_cancelled_order_requires_permission(): void
+    {
+        $customer = User::create([
+            'name' => 'Customer',
+            'email' => 'customer@test.com',
+            'password' => bcrypt('Password123'),
+            'role' => 'customer',
+            'is_active' => true,
+        ]);
+
+        $makeCancelledOrder = function () use ($customer) {
+            return Order::create([
+                'user_id' => $customer->id,
+                'customer_name' => 'Customer',
+                'customer_phone' => '08012345678',
+                'delivery_method' => 'pickup',
+                'payment_method' => 'cash_on_delivery',
+                'status' => 'cancelled',
+                'total_amount' => 400,
+                'payment_status' => 'pending',
+                'payment_reference' => 'ORD-PERM',
+                'delivery_fee' => 0,
+                'delivery_fee_status' => 'standard',
+            ]);
+        };
+
+        // Admin without the permission cannot restore.
+        $withoutPermission = $this->makeAdmin([]);
+        $order = $makeCancelledOrder();
+
+        $this->postJson("/api/v1/admin/orders/{$order->id}/reverse", ['status' => 'new'], $this->adminHeaders($withoutPermission))
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'cancelled']);
+
+        // Admin granted the permission can restore.
+        $withPermission = User::create([
+            'name' => 'Granted Admin',
+            'email' => 'granted@test.com',
+            'password' => bcrypt('Password123'),
+            'role' => 'admin',
+            'is_active' => true,
+            'permissions' => ['restore_cancelled_orders' => true],
+        ]);
+        $withPermission->markEmailAsVerified();
+
+        $order = $makeCancelledOrder();
+
+        $this->app['auth']->forgetGuards();
+        $this->postJson("/api/v1/admin/orders/{$order->id}/reverse", ['status' => 'new'], $this->adminHeaders($withPermission))
+            ->assertOk()
+            ->assertJsonPath('order.status', 'new');
+
+        // Superadmin always has the permission, even without it stored explicitly.
+        $super = $this->makeSuperadmin();
+        $order = $makeCancelledOrder();
+
+        $this->app['auth']->forgetGuards();
+        $this->postJson("/api/v1/admin/orders/{$order->id}/reverse", ['status' => 'new'], $this->adminHeaders($super))
+            ->assertOk()
+            ->assertJsonPath('order.status', 'new');
+    }
+
+    public function test_cancelled_order_appears_in_admin_index(): void
+    {
+        $admin = $this->makeSuperadmin();
+        $customer = User::create([
+            'name' => 'Customer',
+            'email' => 'customer@test.com',
+            'password' => bcrypt('Password123'),
+            'role' => 'customer',
+            'is_active' => true,
+        ]);
+
+        Order::create([
+            'user_id' => $customer->id,
+            'customer_name' => 'Customer',
+            'customer_phone' => '08012345678',
+            'delivery_method' => 'pickup',
+            'payment_method' => 'cash_on_delivery',
+            'status' => 'cancelled',
+            'total_amount' => 400,
+            'payment_status' => 'pending',
+            'payment_reference' => 'ORD-CANCELLED-LIST',
+            'delivery_fee' => 0,
+            'delivery_fee_status' => 'standard',
+        ]);
+
+        $this->getJson('/api/v1/admin/orders?status=cancelled', $this->adminHeaders($admin))
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('orders.0.status', 'cancelled');
+    }
+
     public function test_admin_orders_index_scopes_for_agent(): void
     {
         $agent = User::create([

@@ -85,6 +85,7 @@ class UserController extends Controller
             'permissions.manage_chat' => 'boolean',
             'permissions.manage_users' => 'boolean',
             'permissions.reverse_orders' => 'boolean',
+            'permissions.restore_cancelled_orders' => 'boolean',
         ]);
 
         if ($data['role'] === 'superadmin' && ! auth()->user()->isSuperadmin()) {
@@ -146,6 +147,7 @@ class UserController extends Controller
             'permissions.manage_chat' => 'boolean',
             'permissions.manage_users' => 'boolean',
             'permissions.reverse_orders' => 'boolean',
+            'permissions.restore_cancelled_orders' => 'boolean',
         ]);
 
         $data['email'] = Str::lower($data['email']);

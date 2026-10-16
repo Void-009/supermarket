@@ -65,6 +65,7 @@ Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::put('/cart/update', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+Route::get('/cart/items', [CartController::class, 'items'])->name('cart.items');
 
 // Checkout routes
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');

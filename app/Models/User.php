@@ -175,6 +175,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'manage_discounts' => true,
                 'manage_chat' => true,
                 'reverse_orders' => true,
+                'restore_cancelled_orders' => true,
             ],
             'admin' => [
                 'process_orders' => true,
@@ -190,6 +191,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'manage_discounts' => true,
                 'manage_chat' => true,
                 'reverse_orders' => false,
+                'restore_cancelled_orders' => false,
             ],
             'agent' => [
                 'process_orders' => true,
@@ -205,6 +207,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'manage_discounts' => false,
                 'manage_chat' => true,
                 'reverse_orders' => false,
+                'restore_cancelled_orders' => false,
             ],
             default => [],
         };

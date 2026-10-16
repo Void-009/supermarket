@@ -27,10 +27,12 @@
         @include('components.alert', ['type' => 'success', 'message' => session('success')])
     @endif
 
-    @if($cartItems->isEmpty())
-
         {{-- Empty Cart --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 lg:p-20 text-center" x-show="items.length === 0">
+        {{-- Both blocks stay in the DOM and are toggled by x-show, because the
+             header search bar can add or remove items without a page reload.
+             The inline style only covers the pre-Alpine paint. --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 lg:p-20 text-center"
+            x-show="items.length === 0" @if($cartItems->isNotEmpty()) style="display:none;" @endif>
             <div class="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
                 <i data-lucide="shopping-cart" class="w-12 h-12 text-gray-300"></i>
             </div>
@@ -42,9 +44,7 @@
             </a>
         </div>
 
-    @else
-
-        <div class="flex flex-col lg:flex-row gap-8" x-show="items.length > 0">
+        <div class="flex flex-col lg:flex-row gap-8" x-show="items.length > 0" @if($cartItems->isEmpty()) style="display:none;" @endif>
 
             {{-- Left: Cart Items --}}
             <div class="flex-1 lg:w-[65%]">
@@ -219,8 +219,6 @@
             </div>
         </div>
 
-    @endif
-
     {{-- Remove Confirmation Modal --}}
     <div x-show="pendingRemove" x-cloak
         style="display:none; position:fixed; inset:0; z-index:2147483647;">
@@ -282,6 +280,37 @@ function cartPage() {
         items: {!! $cartItemsJson !!},
         itemLabel: '{{ __("messages.items", ["count" => 1]) }}',
         itemsLabel: '{{ __("messages.items", ["count" => 2]) }}',
+
+        init() {
+            // The header search bar can add an item to the cart while this
+            // page is open. It only broadcasts `cart-updated`, so refetch the
+            // rows here instead of waiting for a full page reload.
+            window.addEventListener('cart-updated', (e) => {
+                const incoming = e && e.detail ? e.detail.count : undefined;
+                // Same count means nothing we display changed (the layout
+                // rebroadcasts one on page load), so skip the round trip.
+                if (typeof incoming === 'number' && incoming === this.itemCount) return;
+                this.refresh();
+            });
+        },
+
+        async refresh() {
+            if (this.updating) return;
+            try {
+                const response = await fetch('{{ route("cart.items") }}', {
+                    headers: { 'Accept': 'application/json' },
+                });
+                const data = await response.json();
+                if (data.success && Array.isArray(data.items)) {
+                    this.items = data.items;
+                    this.$nextTick(() => {
+                        if (typeof lucide !== 'undefined') lucide.createIcons();
+                    });
+                }
+            } catch (err) {
+                // Keep whatever is on screen if the refetch fails.
+            }
+        },
 
         get itemCount() {
             return this.items.reduce((sum, i) => sum + i.quantity, 0);

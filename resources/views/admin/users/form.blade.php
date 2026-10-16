@@ -232,6 +232,16 @@
                             <p class="text-xs text-gray-400">Can reverse orders back from paid, shipped, or delivered</p>
                         </div>
                     </label>
+
+                    <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" name="permissions[restore_cancelled_orders]" value="1"
+                            {{ ($perms['restore_cancelled_orders'] ?? false) ? 'checked' : '' }}
+                            class="rounded border-gray-300 text-emerald-500 focus:ring-emerald-500">
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Restore Cancelled Orders</span>
+                            <p class="text-xs text-gray-400">Can un-cancel a cancelled order and return it to new</p>
+                        </div>
+                    </label>
                 </div>
             </div>
 

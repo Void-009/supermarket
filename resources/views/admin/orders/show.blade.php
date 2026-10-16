@@ -69,17 +69,25 @@
         $currentIndex = array_search($order->status, $steps);
         if ($currentIndex === false) $currentIndex = -1;
         $isCancelled = $order->status === 'cancelled';
+        $unpickedCount = $order->items->whereNull('picked_at')->count();
     @endphp
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         @if($isCancelled)
-            <div class="flex items-center gap-3 text-red-600">
-                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <i data-lucide="x-circle" class="w-5 h-5 text-red-600"></i>
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3 text-red-600">
+                    <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                        <i data-lucide="x-circle" class="w-5 h-5 text-red-600"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Order Cancelled</p>
+                        <p class="text-sm text-gray-500">This order has been cancelled.</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="font-semibold">Order Cancelled</p>
-                    <p class="text-sm text-gray-500">This order has been cancelled.</p>
-                </div>
+                @if($prev && Auth::user()->hasPermission('restore_cancelled_orders'))
+                <button type="button" onclick="reverseOrder('{{ $prev }}', 'restore')" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+                    Restore Order
+                </button>
+                @endif
             </div>
         @else
             <div class="flex items-center justify-between">
@@ -103,7 +111,6 @@
             </div>
 
             {{-- Advance Status Button --}}
-            @php $unpickedCount = $order->items->whereNull('picked_at')->count(); @endphp
             @if($next)
             <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
                 <p class="text-sm text-gray-500">Advance order to <strong class="text-emerald-600">{{ ucfirst($next) }}</strong></p>
@@ -656,8 +663,9 @@
         });
     }
 
-    function reverseOrder(newStatus) {
-        if (!confirm('Are you sure you want to reverse this order to {{ ucfirst($prev) }}?')) return;
+    function reverseOrder(newStatus, mode) {
+        const verb = mode === 'restore' ? 'restore' : 'reverse';
+        if (!confirm('Are you sure you want to ' + verb + ' this order to {{ ucfirst($prev) }}?')) return;
 
         fetch('{{ route('admin.orders.reverse-status', $order) }}', {
             method: 'PUT',

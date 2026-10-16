@@ -28,6 +28,7 @@ class OrderController extends Controller
         'shipped' => 'paid',
         'paid' => 'processing',
         'processing' => 'new',
+        'cancelled' => 'new',
     ];
 
     private function authorizeOrderAccess(Order $order): void
@@ -217,6 +218,14 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Only a superadmin or a user with the Reverse Paid Orders permission can reverse this order.',
+            ], 403);
+        }
+
+        if ($order->status === 'cancelled'
+            && ! auth()->user()->hasPermission('restore_cancelled_orders')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only a superadmin or a user with the Restore Cancelled Orders permission can restore this order.',
             ], 403);
         }
 
