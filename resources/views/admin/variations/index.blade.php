@@ -13,6 +13,9 @@
             <p class="text-sm text-gray-500 mt-1">Manage quantities for items with variation IDs (e.g. <code class="bg-gray-100 px-1 rounded text-xs">1070@3467</code>).</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('admin.items.variations.duplicates') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-xl transition-colors shadow-sm">
+                <i data-lucide="copy" class="w-4 h-4"></i> Review Duplicates
+            </a>
             <a href="{{ route('admin.items.index') }}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors shadow-sm">
                 <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Items
             </a>

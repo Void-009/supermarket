@@ -223,10 +223,10 @@ class ItemController extends Controller
                 $items->update(['category_id' => $validated['category_id']]);
                 break;
             case 'bulk_hide':
-                $items->update(['is_visible_online' => false]);
+                $items->update(['is_visible_online' => false, 'hidden_by_admin' => true]);
                 break;
             case 'bulk_show':
-                $items->update(['is_visible_online' => true]);
+                $items->update(['is_visible_online' => true, 'hidden_by_admin' => false]);
                 break;
         }
 
@@ -313,6 +313,7 @@ class ItemController extends Controller
 
                 Item::where('id', $entry['id'])->update([
                     'quantity' => $quantity,
+                    'hidden_by_admin' => $quantity <= 0,
                     'is_visible_online' => $quantity > 0,
                     'stock_status' => $stockStatus,
                 ]);

@@ -195,8 +195,8 @@ class ItemController extends Controller
 
         match ($validated['action']) {
             'change_category' => $items->update(['category_id' => $validated['category_id']]),
-            'bulk_hide' => $items->update(['is_visible_online' => false]),
-            'bulk_show' => $items->update(['is_visible_online' => true]),
+            'bulk_hide' => $items->update(['is_visible_online' => false, 'hidden_by_admin' => true]),
+            'bulk_show' => $items->update(['is_visible_online' => true, 'hidden_by_admin' => false]),
         };
 
         return response()->json(['success' => true, 'message' => 'Bulk action completed.']);
@@ -227,6 +227,7 @@ class ItemController extends Controller
 
                 Item::where('id', $entry['id'])->update([
                     'quantity' => $quantity,
+                    'hidden_by_admin' => $quantity <= 0,
                     'is_visible_online' => $quantity > 0,
                     'stock_status' => $stockStatus,
                 ]);

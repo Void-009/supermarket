@@ -12,6 +12,9 @@
                 ->orderBy('display_name')
                 ->get()
             : collect());
+    // Dedupe the siblings first; the viewed item and its parent are
+    // prepended afterwards so they can never be collapsed away.
+    $variations = \App\Models\Item::dedupeVariations($variations);
     if ($item->isVariation() && $variations->doesntContain('id', $item->id)) {
         $variations->prepend($item);
     }

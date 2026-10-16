@@ -22,6 +22,14 @@ Route::post('/pos/sync', [PosSyncController::class, 'store'])
     ->middleware(['auth:sanctum', 'ability:pos:sync', 'throttle:pos-sync'])
     ->name('api.pos.sync');
 
+Route::get('/pos/sync/batch/{sync_id}', [PosSyncController::class, 'batchStatus'])
+    ->middleware(['auth:sanctum', 'ability:pos:sync', 'throttle:pos-sync'])
+    ->name('api.pos.sync.batch');
+
+Route::post('/pos/sync/reconcile', [PosSyncController::class, 'reconcile'])
+    ->middleware(['auth:sanctum', 'ability:pos:sync', 'throttle:pos-sync'])
+    ->name('api.pos.sync.reconcile');
+
 Route::post('/pos/sync/rotate-token', [PosSyncController::class, 'rotateToken'])
     ->middleware(['auth:sanctum', 'ability:pos:sync', 'throttle:pos-sync'])
     ->name('api.pos.sync.rotate-token');

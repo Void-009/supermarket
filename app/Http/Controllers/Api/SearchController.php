@@ -86,6 +86,8 @@ class SearchController extends Controller
         $items = DB::table("items")
             ->leftJoin("categories", "items.category_id", "=", "categories.id")
             ->where("items.is_visible_online", true)
+            ->where("items.hidden_by_admin", false)
+            ->whereNull("items.pos_missing_since")
             ->whereIn("items.category_id", Category::activeCategoryTreeIds())
             ->where(function ($q) use ($query) {
                 $needle = mb_strtolower($query);
@@ -152,7 +154,7 @@ class SearchController extends Controller
                 $variations = $variationsByParent->get($item->pos_item_id, collect());
             }
 
-            $options = $variations->map(fn ($v) => $this->variationOption($v))->values();
+            $options = Item::dedupeVariations($variations)->map(fn ($v) => $this->variationOption($v))->values();
             if ($parent && $isVariation && $options->doesntContain("id", $parent->id)) {
                 $options->prepend($this->parentOption($parent));
             }
@@ -217,9 +219,11 @@ class SearchController extends Controller
 
         if ($item->isVariation() && $item->parent_item_number) {
             $parent = Item::where("pos_item_id", $item->parent_item_number)->first();
-            $variations = Item::where("parent_item_number", $item->parent_item_number)
-                ->orderBy("display_name")
-                ->get();
+            $variations = Item::dedupeVariations(
+                Item::where("parent_item_number", $item->parent_item_number)
+                    ->orderBy("display_name")
+                    ->get()
+            );
             if ($variations->doesntContain("id", $item->id)) {
                 $variations->prepend($item);
             }
@@ -227,9 +231,11 @@ class SearchController extends Controller
                 $variations->prepend($parent);
             }
         } else {
-            $variations = Item::where("parent_item_number", $item->pos_item_id)
-                ->orderBy("display_name")
-                ->get();
+            $variations = Item::dedupeVariations(
+                Item::where("parent_item_number", $item->pos_item_id)
+                    ->orderBy("display_name")
+                    ->get()
+            );
         }
 
         return [

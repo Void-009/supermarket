@@ -176,8 +176,9 @@ class CatalogController extends Controller
             'variations.parentItem',
         ]);
 
-        $variations = $item->variations
-            ->filter(fn ($v) => $v->is_visible_online)
+        $variations = Item::dedupeVariations(
+            $item->variations->filter(fn ($v) => $v->visibleInStore())
+        )
             ->map(fn ($v) => [
                 'id' => $v->id,
                 'pos_item_id' => $v->pos_item_id,

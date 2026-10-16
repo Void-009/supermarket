@@ -343,6 +343,50 @@ class PosSyncApiTest extends TestCase
         $this->postJson('/api/pos/sync/rotate-token')->assertStatus(403);
     }
 
+    public function test_batch_status_reports_processed_batch(): void
+    {
+        Sanctum::actingAs($this->posUser(), ['pos:sync']);
+
+        $payload = $this->createPayload(fake()->uuid(), [
+            [
+                'action' => 'create',
+                'pos_item_id' => '45021',
+                'name' => 'Golden Penny Spaghetti 500g',
+                'selling_price' => 1200,
+                'quantity' => 35,
+            ],
+        ]);
+
+        $this->postJson('/api/pos/sync', $payload)->assertStatus(202);
+
+        // The agent polls this after sending so it only marks its local
+        // changes as uploaded once the queue has actually run.
+        $this->getJson('/api/pos/sync/batch/'.$payload['sync_id'])
+            ->assertOk()
+            ->assertJson([
+                'status' => 'completed',
+                'total_items' => 1,
+                'processed_items' => 1,
+                'failed_items' => 0,
+            ]);
+    }
+
+    public function test_batch_status_returns_404_for_unknown_batch(): void
+    {
+        Sanctum::actingAs($this->posUser(), ['pos:sync']);
+
+        $this->getJson('/api/pos/sync/batch/'.fake()->uuid())
+            ->assertStatus(404)
+            ->assertJson(['status' => 'not_found']);
+    }
+
+    public function test_batch_status_requires_pos_sync_ability(): void
+    {
+        Sanctum::actingAs($this->posUser(), []);
+
+        $this->getJson('/api/pos/sync/batch/'.fake()->uuid())->assertStatus(403);
+    }
+
     public function test_rotate_token_issues_fresh_token_and_revokes_old(): void
     {
         $user = $this->posUser();

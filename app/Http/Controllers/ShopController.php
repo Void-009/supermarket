@@ -133,6 +133,10 @@ class ShopController extends Controller
                 ->get();
         }
 
+        // Dedupe only the siblings; the current item and the parent are
+        // prepended afterwards so they can never be collapsed away.
+        $variations = Item::dedupeVariations($variations);
+
         // The current item is always part of the selector so it can be pre-selected.
         if ($isVariation && $variations->doesntContain('id', $item->id)) {
             $variations->prepend($item);

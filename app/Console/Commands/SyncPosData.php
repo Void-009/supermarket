@@ -100,6 +100,9 @@ class SyncPosData extends Command
         try {
             $service = app(PosSyncService::class);
             $existingItems = Item::select('id', 'pos_item_id')->get()->keyBy('pos_item_id');
+            $runStartedAt = now();
+            $seenPosItemIds = [];
+            $inactivePosItemIds = [];
 
             $filter = new SyncChunkFilter(self::NEEDED_COLS);
             $filter->readAll();
@@ -127,6 +130,41 @@ class SyncPosData extends Command
             $rowsSkipped = 0;
             $errorDetails = [];
 
+            // Collect the export's id list and reconcile BEFORE a single row
+            // is applied. A replacement id only revives the row it replaces if
+            // that row is already tombstoned, so creating first turns a
+            // restock into a duplicate where creating second refreshes the
+            // original row and records the alias.
+            [$seenPosItemIds, $inactivePosItemIds] = $this->collectExportIds($rows);
+
+            // A full export doubles as the complete POS inventory listing:
+            // hide anything the till dropped since the last run (missing from
+            // the file) or has flagged Inactive. Rails inside
+            // reconcileCatalog() keep this safe on partial exports.
+            if ($mode === 'all') {
+                try {
+                    $reconciled = $service->reconcileCatalog(
+                        array_keys($seenPosItemIds),
+                        array_keys($inactivePosItemIds),
+                        $runStartedAt
+                    );
+
+                    if ($reconciled['skipped']) {
+                        $this->warn("Reconcile skipped: {$reconciled['reason']}");
+                    } elseif ($reconciled['tombstoned'] > 0) {
+                        $this->info(sprintf(
+                            'Reconcile: %d hidden and kept for restore (%d missing product(s), %d missing variation(s), %d inactive in POS).',
+                            $reconciled['tombstoned'],
+                            $reconciled['missing_products'],
+                            $reconciled['missing_variations'],
+                            $reconciled['inactive_hidden']
+                        ));
+                    }
+                } catch (\Exception $e) {
+                    $this->warn("Catalog reconcile failed: {$e->getMessage()}");
+                }
+            }
+
             foreach ($rows as $row) {
                 $name = trim($row['C'] ?? '');
                 if ($name === '' || $name === 'Item Name') {
@@ -153,10 +191,7 @@ class SyncPosData extends Command
 
                 $rowsProcessed++;
 
-                $posItemId = trim($row['AX'] ?? '');
-                if ($posItemId === '') {
-                    $posItemId = 'POS-'.$rowsProcessed;
-                }
+                $posItemId = $this->posItemIdFor($row, $rowsProcessed);
 
                 $exists = isset($existingItems[$posItemId]);
 
@@ -164,10 +199,12 @@ class SyncPosData extends Command
                 // price/qty modes never create items.
                 if ($exists && $mode === 'new') {
                     $rowsSkipped++;
+
                     continue;
                 }
                 if (! $exists && in_array($mode, ['price', 'qty'])) {
                     $rowsSkipped++;
+
                     continue;
                 }
 
@@ -238,6 +275,50 @@ class SyncPosData extends Command
 
             return Command::FAILURE;
         }
+    }
+
+    /**
+     * The POS Item Id for a row, with the position-based fallback the sync
+     * has always used for rows the export left blank. Shared by the id
+     * pre-pass and the apply loop so both always agree on an id.
+     */
+    private function posItemIdFor(array $row, int $position): string
+    {
+        $posItemId = trim((string) ($row['AX'] ?? ''));
+
+        return $posItemId === '' ? 'POS-'.$position : $posItemId;
+    }
+
+    /**
+     * Every POS Item Id in the export, plus the ones the till flags Inactive.
+     *
+     * Skips header and blank rows the same way the apply loop does so the
+     * position-based fallback ids line up between the two passes.
+     *
+     * @return array{0: array<string, true>, 1: array<string, true>}
+     */
+    private function collectExportIds(array $rows): array
+    {
+        $seen = [];
+        $inactive = [];
+        $position = 0;
+
+        foreach ($rows as $row) {
+            $name = trim((string) ($row['C'] ?? ''));
+            if ($name === '' || $name === 'Item Name') {
+                continue;
+            }
+
+            $position++;
+            $posItemId = $this->posItemIdFor($row, $position);
+            $seen[$posItemId] = true;
+
+            if ($this->toBool($row['P'] ?? '')) {
+                $inactive[$posItemId] = true;
+            }
+        }
+
+        return [$seen, $inactive];
     }
 
     private function buildPayload(array $row, string $posItemId, string $mode, bool $exists): array

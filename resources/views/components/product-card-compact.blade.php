@@ -7,6 +7,7 @@
     $variations = $item->relationLoaded('variations')
         ? $item->variations
         : collect();
+    $variations = \App\Models\Item::dedupeVariations($variations);
     if ($item->isVariation() && $parentItem && $variations->doesntContain('id', $parentItem->id)) {
         $variations->prepend($parentItem);
     }

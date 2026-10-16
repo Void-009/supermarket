@@ -326,6 +326,13 @@
                             @else
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">Hidden</span>
                             @endif
+                            <div class="mt-1" title="{{ $item->owned_by_pos ? 'Created by the POS sync. The till may hide it when it stops listing the id.' : 'Created on the website. The POS sync never hides it.' }}">
+                                @if($item->owned_by_pos)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">Till</span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Website</span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-2.5 py-4 text-center">
                             <button @click="toggleAdminFavorite({{ $item->id }}, $event)" class="inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors {{ $item->is_admin_favorite ? 'text-rose-500 bg-rose-50 hover:bg-rose-100' : 'text-gray-300 hover:text-rose-400 hover:bg-gray-100' }}" title="Toggle admin favorite">

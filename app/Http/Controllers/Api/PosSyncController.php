@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PosSyncReconcileRequest;
 use App\Http\Requests\PosSyncRequest;
 use App\Jobs\ProcessPosSyncBatch;
 use App\Models\PosSyncAgentStatus;
 use App\Models\PosSyncBatch;
+use App\Services\PosSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -88,6 +90,69 @@ class PosSyncController extends Controller
             'sync_id' => $batch->sync_id,
             'received_items' => count($items),
         ], 202);
+    }
+
+    /**
+     * Reports how a batch the agent sent is doing on the queue. The agent
+     * only marks its local changes as uploaded once this returns a terminal
+     * status, so a batch that never ran (worker down) or was purged before
+     * processing keeps the changes queued for resend instead of being lost.
+     */
+    public function batchStatus(string $syncId): JsonResponse
+    {
+        $batch = PosSyncBatch::where('sync_id', $syncId)->first();
+
+        if (! $batch) {
+            return response()->json([
+                'status' => 'not_found',
+                'message' => 'Unknown sync_id (the batch may have been purged before it was processed).',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => $batch->status,
+            'total_items' => $batch->total_items,
+            'processed_items' => $batch->processed_items,
+            'failed_items' => $batch->failed_items,
+            'failed_items_detail' => $batch->items()
+                ->where('status', 'failed')
+                ->pluck('error_message', 'pos_item_id'),
+            'created_at' => $batch->created_at?->toIso8601String(),
+            'updated_at' => $batch->updated_at?->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Receives the agent's complete POS Item Id inventory and tombstones
+     * synced variations that are no longer in it. Tombstoned rows are
+     * hidden (never deleted) and can be revived by a fingerprint match
+     * when the POS re-creates the variation under a fresh id.
+     */
+    public function reconcile(PosSyncReconcileRequest $request, PosSyncService $service): JsonResponse
+    {
+        $data = $request->validated();
+
+        $this->heartbeat($data['source'] ?? 'pos-agent', $request->header('X-Agent-Version'));
+
+        $result = $service->reconcileCatalog(
+            $data['pos_item_ids'],
+            $data['inactive_pos_item_ids'] ?? [],
+            now(),
+            (bool) ($data['dry_run'] ?? false)
+        );
+
+        return response()->json([
+            'status' => $result['skipped'] ? 'skipped' : 'ok',
+            'dry_run' => (bool) ($data['dry_run'] ?? false),
+            'reason' => $result['reason'],
+            'seen_count' => $result['seen_count'],
+            'reference_count' => $result['reference_count'],
+            'missing_products' => $result['missing_products'],
+            'missing_variations' => $result['missing_variations'],
+            'inactive_hidden' => $result['inactive_hidden'],
+            'tombstoned' => $result['tombstoned'],
+            'tombstoned_ids' => $result['ids'],
+        ]);
     }
 
     /**
