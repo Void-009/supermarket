@@ -18,6 +18,10 @@
         <a href="{{ route('admin.items.variations.manage') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-sm font-semibold rounded-xl hover:bg-amber-600 transition-colors shadow-sm">
             <i data-lucide="package-plus" class="w-4 h-4"></i> Manage Variations
         </a>
+        <a href="{{ route('admin.items.missing-images') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-rose-500 text-white text-sm font-semibold rounded-xl hover:bg-rose-600 transition-colors shadow-sm">
+            <i data-lucide="image-off" class="w-4 h-4"></i> Missing Images
+            <span class="inline-flex items-center justify-center min-w-5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20">{{ number_format($missingImageCount ?? 0) }}</span>
+        </a>
     </div>
 
     {{-- Summary Cards --}}

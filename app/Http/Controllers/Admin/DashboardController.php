@@ -16,8 +16,38 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        $stats = $this->stats(auth()->user());
 
+        $agentStatus = PosSyncAgentStatus::where('source', 'pos-agent')->first();
+        $lastBatch = PosSyncBatch::latest()->first();
+        $latestId = (int) (Order::max('id') ?? 0);
+
+        return view('admin.dashboard', $stats + compact('agentStatus', 'lastBatch', 'latestId'));
+    }
+
+    /**
+     * Live snapshot used by the dashboard to keep its counters and recent
+     * orders table in sync without a full page refresh.
+     */
+    public function live()
+    {
+        $stats = $this->stats(auth()->user());
+        $recentOrders = $stats['recentOrders'];
+        $recentHtml = view('admin.partials.recent-orders-rows', compact('recentOrders'))->render();
+
+        return response()->json([
+            'total_orders' => $stats['totalOrders'],
+            'pending_orders' => $stats['pendingOrders'],
+            'total_revenue' => (float) $stats['totalRevenue'],
+            'latest_id' => (int) (Order::max('id') ?? 0),
+            'recent_ids' => $recentOrders->pluck('id')->values(),
+            'recent_html' => $recentHtml,
+            'recent_version' => md5($recentHtml),
+        ]);
+    }
+
+    private function stats($user): array
+    {
         if ($user->isAgent()) {
             $totalItems = Item::count();
             $totalOrders = Order::where('processed_by', $user->id)->count();
@@ -34,18 +64,16 @@ class DashboardController extends Controller
             $recentOrders = Order::with('items', 'processor')->latest()->limit(10)->get();
         }
 
-        $agentStatus = PosSyncAgentStatus::where('source', 'pos-agent')->first();
-        $lastBatch = PosSyncBatch::latest()->first();
+        $missingImageCount = Item::withoutImage()->whereNull('pos_missing_since')->count();
 
-        return view('admin.dashboard', compact(
+        return compact(
             'totalItems',
             'totalOrders',
             'totalRevenue',
             'pendingOrders',
             'recentOrders',
-            'agentStatus',
-            'lastBatch'
-        ));
+            'missingImageCount'
+        );
     }
 
     public function profile()

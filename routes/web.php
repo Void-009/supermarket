@@ -134,6 +134,7 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name(
 // Admin routes (protected by admin middleware)
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/live', [DashboardController::class, 'live'])->name('dashboard.live');
 
     // Live search for the current admin page context
     Route::get('/api/search', [AdminSearchController::class, 'search'])->name('search');
@@ -157,6 +158,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'admin'])-
     // Items
     Route::middleware('can:modify_items')->group(function () {
         Route::get('/items', [ItemController::class, 'index'])->name('items.index');
+        Route::get('/items/missing-images', [ItemController::class, 'missingImages'])->name('items.missing-images');
         Route::post('/items', [ItemController::class, 'store'])->name('items.store');
         Route::put('/items/{item}', [ItemController::class, 'update'])->name('items.update');
         Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
@@ -209,6 +211,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'active', 'admin'])-
     // Orders
     Route::middleware('can:process_orders')->group(function () {
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/live', [OrderController::class, 'live'])->name('orders.live');
         Route::post('/orders/bulk', [OrderController::class, 'bulk'])->name('orders.bulk');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');

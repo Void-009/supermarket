@@ -75,7 +75,69 @@ class ItemController extends Controller
             ->limit(8)
             ->get();
 
-        return view('admin.items.index', compact('items', 'categories', 'recentItems', 'mostPopular', 'adminFavoriteItems'));
+        $missingImageCount = Item::withoutImage()->whereNull('pos_missing_since')->count();
+
+        return view('admin.items.index', compact('items', 'categories', 'recentItems', 'mostPopular', 'adminFavoriteItems', 'missingImageCount'));
+    }
+
+    /**
+     * Focused cleanup page: every item that has no usable image (its own or an
+     * inherited parent image). Supports the same category / stock / sort
+     * filters as the main items list.
+     */
+    public function missingImages(Request $request)
+    {
+        if (!auth()->user()->hasPermission('modify_items') && !auth()->user()->isSuperadmin() && !auth()->user()->isAdmin()) {
+            abort(403, 'You do not have permission to view items.');
+        }
+
+        $base = Item::query()->withoutImage()->whereNull('pos_missing_since');
+        $query = (clone $base)->with(['category', 'barcodes']);
+
+        if ($search = trim((string) $request->input('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('display_name', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('pos_item_id', 'like', "%{$search}%")
+                    ->orWhereHas('barcodes', function ($bq) use ($search) {
+                        $bq->where('barcode_value', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($categoryId = $request->input('category_id')) {
+            $query->where('category_id', $categoryId);
+        }
+
+        if ($stockStatus = $request->input('stock_status')) {
+            $query->where('stock_status', $stockStatus);
+        }
+
+        if ($visibility = $request->input('visibility')) {
+            $query->where('is_visible_online', $visibility === 'visible');
+        }
+
+        switch ($request->input('sort', 'newest')) {
+            case 'oldest':      $query->oldest(); break;
+            case 'name_asc':    $query->orderBy('name', 'asc'); break;
+            case 'name_desc':   $query->orderBy('name', 'desc'); break;
+            case 'price_asc':   $query->orderBy('selling_price', 'asc'); break;
+            case 'price_desc':  $query->orderBy('selling_price', 'desc'); break;
+            case 'stock_asc':   $query->orderBy('quantity', 'asc'); break;
+            case 'stock_desc':  $query->orderBy('quantity', 'desc'); break;
+            default:            $query->latest(); break;
+        }
+
+        $items = $query->paginate(25)->withQueryString();
+
+        $totalMissing = (clone $base)->count();
+
+        $categories = Category::withCount(['items' => function ($q) {
+            $q->withoutImage()->whereNull('pos_missing_since');
+        }])->orderBy('name')->get();
+
+        return view('admin.items.missing-images', compact('items', 'categories', 'totalMissing'));
     }
 
 

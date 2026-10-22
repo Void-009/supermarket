@@ -84,7 +84,7 @@
             <div class="flex items-center justify-between gap-4">
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-                    <p class="text-xl sm:text-2xl font-bold text-gray-900 mt-1 tabular-nums leading-tight fit-value">₦{{ number_format($totalRevenue, 2) }}</p>
+                    <p id="total-revenue-amount" class="text-xl sm:text-2xl font-bold text-gray-900 mt-1 tabular-nums leading-tight fit-value">₦{{ number_format($totalRevenue, 2) }}</p>
                 </div>
                 <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center flex-shrink-0">
                     <i data-lucide="banknote" class="w-6 h-6 text-emerald-600"></i>
@@ -106,6 +106,24 @@
         </a>
     </div>
 
+    {{-- Items missing images --}}
+    @if(($missingImageCount ?? 0) > 0 && (Auth::user()->hasPermission('modify_items') || Auth::user()->isSuperadmin() || Auth::user()->isAdmin()))
+    <a href="{{ route('admin.items.missing-images') }}" class="group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 hover:bg-amber-100 transition-colors">
+        <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <i data-lucide="image-off" class="w-5 h-5 text-amber-600"></i>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-amber-900">{{ number_format($missingImageCount) }} {{ \Illuminate\Support\Str::plural('item', $missingImageCount) }} without an image</p>
+                <p class="text-xs text-amber-700 mt-0.5">Add photos so customers know exactly what they are ordering.</p>
+            </div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-amber-800 group-hover:text-amber-900 whitespace-nowrap">
+            Review items <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </span>
+    </a>
+    @endif
+
     {{-- Recent Orders --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100">
         <div class="px-6 py-5 border-b border-gray-100">
@@ -115,7 +133,6 @@
             </div>
         </div>
 
-        @if($recentOrders->count())
         <div class="overflow-x-auto">
             <table class="w-full text-sm min-w-[600px]">
                 <thead>
@@ -129,44 +146,10 @@
                     </tr>
                 </thead>
                 <tbody id="recent-orders-body" class="divide-y divide-gray-50">
-                    @foreach($recentOrders as $order)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">#{{ $order->id }}</td>
-                        <td class="px-6 py-4 text-gray-700 max-w-[160px] break-words">{{ $order->customer_name ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">₦{{ number_format($order->total_amount, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @php
-                                $statusColors = [
-                                    'new' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                    'processing' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                    'paid' => 'bg-green-50 text-green-700 border-green-200',
-                                    'shipped' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                    'delivered' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                    'cancelled' => 'bg-red-50 text-red-700 border-red-200',
-                                ];
-                                $colorClass = $statusColors[$order->status] ?? 'bg-gray-50 text-gray-700 border-gray-200';
-                            @endphp
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border {{ $colorClass }}">
-                                {{ ucfirst($order->status) }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-gray-500 whitespace-nowrap">{{ $order->created_at->format('M d, Y') }}</td>
-                        <td class="px-6 py-4 text-right whitespace-nowrap">
-                            <a href="{{ route('admin.orders.show', $order) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200">
-                                <i data-lucide="eye" class="w-3.5 h-3.5"></i> View
-                            </a>
-                        </td>
-                    </tr>
-                    @endforeach
+                    @include('admin.partials.recent-orders-rows', ['recentOrders' => $recentOrders])
                 </tbody>
             </table>
         </div>
-        @else
-        <div id="no-orders-msg" class="px-6 py-12 text-center">
-            <i data-lucide="inbox" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
-            <p class="text-sm text-gray-500">No orders yet.</p>
-        </div>
-        @endif
     </div>
 </div>
 
@@ -232,16 +215,14 @@
         setTimeout(fitCardValues, 300);
     });
 
-    // Live new-order feed: prepend to Recent Orders, bump counters, toast + sound.
+    // Live new-order feed. Uses Echo for instant updates and a light polling
+    // fallback so the page still updates when Reverb or the queue worker is
+    // not running.
     (function () {
-        const statusColors = {
-            'new': 'bg-blue-50 text-blue-700 border-blue-200',
-            'processing': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-            'paid': 'bg-green-50 text-green-700 border-green-200',
-            'shipped': 'bg-purple-50 text-purple-700 border-purple-200',
-            'delivered': 'bg-emerald-50 text-emerald-700 border-emerald-200',
-            'cancelled': 'bg-red-50 text-red-700 border-red-200',
-        };
+        const endpoint = '{{ route('admin.dashboard.live') }}';
+        let latestId = {{ (int) ($latestId ?? 0) }};
+        let lastFingerprint = null;
+        let refreshing = false;
 
         let audioCtx = null;
         function playSound() {
@@ -266,64 +247,95 @@
             } catch (e) {}
         }
 
-        function bump(id) {
+        function setText(id, value) {
             const el = document.getElementById(id);
-            if (!el) return;
-            const n = parseInt(el.textContent.replace(/[^0-9]/g, ''), 10) || 0;
-            el.textContent = (n + 1).toLocaleString();
+            if (!el || el.textContent === value) return;
+            el.textContent = value;
             if (typeof fitCardValues === 'function') fitCardValues();
         }
 
-        function rowHtml(o) {
-            const color = statusColors[o.status] || 'bg-gray-50 text-gray-700 border-gray-200';
-            const date = new Date(o.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-            return '<tr class="hover:bg-gray-50/50 transition-colors bg-emerald-50/40">'
-                + '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">#' + o.id + '</td>'
-                + '<td class="px-6 py-4 text-gray-700 max-w-[160px] break-words">' + (o.customer_name || 'N/A') + '</td>'
-                + '<td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">&#8358;' + Number(o.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>'
-                + '<td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ' + color + '">' + o.status.charAt(0).toUpperCase() + o.status.slice(1) + '</span></td>'
-                + '<td class="px-6 py-4 text-gray-500 whitespace-nowrap">' + date + '</td>'
-                + '<td class="px-6 py-4 text-right whitespace-nowrap"><a href="' + (o.url || '/admin/orders/' + o.id) + '" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200">View</a></td>'
-                + '</tr>';
+        function notify(order) {
+            if (!order) return;
+            if (typeof showToast === 'function') {
+                showToast('New order #' + order.id + ' from ' + (order.customer_name || 'a customer'), 'success');
+            }
+            playSound();
         }
 
-        function insertRow(o) {
-            let tbody = document.getElementById('recent-orders-body');
-            if (!tbody) {
-                const empty = document.getElementById('no-orders-msg');
-                if (empty) {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'overflow-x-auto';
-                    wrapper.innerHTML = '<table class="w-full text-sm min-w-[600px]"><thead><tr class="border-b border-gray-100">'
-                        + '<th class="text-left px-6 py-3 font-medium text-gray-500">Order ID</th>'
-                        + '<th class="text-left px-6 py-3 font-medium text-gray-500">Customer</th>'
-                        + '<th class="text-left px-6 py-3 font-medium text-gray-500">Amount</th>'
-                        + '<th class="text-left px-6 py-3 font-medium text-gray-500">Status</th>'
-                        + '<th class="text-left px-6 py-3 font-medium text-gray-500">Date</th>'
-                        + '<th class="text-right px-6 py-3 font-medium text-gray-500">Action</th>'
-                        + '</tr></thead><tbody id="recent-orders-body" class="divide-y divide-gray-50"></tbody></table>';
-                    empty.replaceWith(wrapper);
-                    tbody = document.getElementById('recent-orders-body');
+        function render(data) {
+            const tbody = document.getElementById('recent-orders-body');
+            if (!tbody) return;
+
+            const fingerprint = [
+                data.latest_id,
+                data.total_orders,
+                data.pending_orders,
+                data.recent_version,
+            ].join('|');
+            if (fingerprint === lastFingerprint) return;
+            lastFingerprint = fingerprint;
+
+            tbody.innerHTML = data.recent_html || '';
+            if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                window.Alpine.initTree(tbody);
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        async function refresh(notifyNew) {
+            if (refreshing || document.hidden) return;
+            refreshing = true;
+            try {
+                const res = await fetch(endpoint, {
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+
+                setText('total-orders-count', Number(data.total_orders).toLocaleString());
+                setText('pending-orders-count', Number(data.pending_orders).toLocaleString());
+                setText('total-revenue-amount', '₦' + Number(data.total_revenue).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }));
+                render(data);
+
+                if (Number(data.latest_id) > latestId) {
+                    latestId = Number(data.latest_id);
+                    if (notifyNew) notify(data.latest_order);
                 }
-            }
-            if (tbody) {
-                tbody.insertAdjacentHTML('afterbegin', rowHtml(o));
-                while (tbody.rows.length > 10) tbody.deleteRow(tbody.rows.length - 1);
+            } catch (e) {
+                // Silent: polling will try again on the next tick.
+            } finally {
+                refreshing = false;
             }
         }
 
-        function hook() {
-            if (typeof window.Echo === 'undefined') { setTimeout(hook, 500); return; }
+        function hookEcho() {
+            if (typeof window.Echo === 'undefined') {
+                setTimeout(hookEcho, 500);
+                return;
+            }
+
             window.Echo.private('admin.orders').listen('.OrderCreated', function (e) {
-                const o = e.order || e;
-                insertRow(o);
-                bump('total-orders-count');
-                if ((o.status || 'new') === 'new') bump('pending-orders-count');
-                if (typeof showToast === 'function') showToast('New order #' + o.id + ' from ' + (o.customer_name || 'a customer'), 'success');
-                playSound();
+                const order = e.order || e;
+                const id = Number(order.id) || 0;
+                if (id > latestId) {
+                    latestId = id;
+                    notify(order);
+                }
+                refresh(false);
             });
         }
-        hook();
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) refresh(false);
+        });
+
+        refresh(false);
+        hookEcho();
+        setInterval(function () { refresh(true); }, 5000);
     })();
 </script>
 @endsection

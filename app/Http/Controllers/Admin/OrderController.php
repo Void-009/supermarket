@@ -50,6 +50,45 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
+        $orders = $this->ordersQuery($request)->latest()->paginate(15)->withQueryString();
+
+        $counts = $this->statusCounts();
+        $totalAll = Order::count();
+        $latestId = (int) (Order::max('id') ?? 0);
+
+        return view('admin.orders.index', compact('orders', 'counts', 'totalAll', 'latestId'));
+    }
+
+    /**
+     * Live snapshot for the orders table. The browser polls this endpoint and
+     * also hits it when a broadcast arrives, so the table stays current even
+     * when the websocket server/queue worker is unavailable.
+     */
+    public function live(Request $request)
+    {
+        $orders = $this->ordersQuery($request)->latest()->paginate(15)->withQueryString();
+        $latestOrder = Order::latest('id')->first();
+        $rowsHtml = view('admin.orders._rows', compact('orders'))->render();
+
+        return response()->json([
+            'rows_html' => $rowsHtml,
+            'rows_version' => md5($rowsHtml),
+            'counts' => $this->statusCounts(),
+            'total_all' => Order::count(),
+            'latest_id' => (int) ($latestOrder?->id ?? 0),
+            'latest_order' => $latestOrder ? [
+                'id' => $latestOrder->id,
+                'customer_name' => $latestOrder->customer_name ?? 'N/A',
+                'status' => $latestOrder->status,
+                'total_amount' => (float) $latestOrder->total_amount,
+                'created_at' => $latestOrder->created_at?->toISOString(),
+                'url' => route('admin.orders.show', $latestOrder),
+            ] : null,
+        ]);
+    }
+
+    private function ordersQuery(Request $request)
+    {
         $query = Order::with(['items', 'processor', 'payment']);
 
         $user = auth()->user();
@@ -79,19 +118,24 @@ class OrderController extends Controller
             });
         }
 
-        $orders = $query->latest()->paginate(15)->withQueryString();
+        return $query;
+    }
 
-        $counts = [
-            'new' => Order::where('status', 'new')->count(),
-            'processing' => Order::where('status', 'processing')->count(),
-            'paid' => Order::where('status', 'paid')->count(),
-            'shipped' => Order::where('status', 'shipped')->count(),
-            'delivered' => Order::where('status', 'delivered')->count(),
-            'cancelled' => Order::where('status', 'cancelled')->count(),
+    private function statusCounts(): array
+    {
+        $counts = Order::query()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return [
+            'new' => (int) ($counts['new'] ?? 0),
+            'processing' => (int) ($counts['processing'] ?? 0),
+            'paid' => (int) ($counts['paid'] ?? 0),
+            'shipped' => (int) ($counts['shipped'] ?? 0),
+            'delivered' => (int) ($counts['delivered'] ?? 0),
+            'cancelled' => (int) ($counts['cancelled'] ?? 0),
         ];
-        $totalAll = Order::count();
-
-        return view('admin.orders.index', compact('orders', 'counts', 'totalAll'));
     }
 
     public function show(Order $order)

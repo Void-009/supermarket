@@ -27,16 +27,16 @@
     </div>
 @endif
 
-{{-- Page Header --}}
-    <div class="mb-8">
-        <nav class="flex items-center gap-2 text-sm text-gray-500 mb-4">
+    {{-- Page Header --}}
+    <div class="mb-4 lg:mb-8">
+        <nav class="hidden lg:flex items-center gap-2 text-sm text-gray-500 mb-0 lg:mb-4">
             <a href="{{ route('home') }}" class="hover:text-emerald-600 transition-colors">{{ __('messages.home') }}</a>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             <a href="{{ route('cart.index') }}" class="hover:text-emerald-600 transition-colors">{{ __('messages.cart') }}</a>
             <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             <span class="text-gray-900 font-medium">{{ __('messages.checkout') }}</span>
         </nav>
-        <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.checkout') }}</h1>
+        <h1 class="text-2xl lg:text-4xl font-extrabold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.checkout') }}</h1>
     </div>
 
     {{-- Progress Steps (Desktop) --}}
@@ -84,7 +84,7 @@
             @csrf
 
             {{-- Mobile Stepper --}}
-            <div class="lg:hidden mb-5">
+            <div class="lg:hidden mb-3">
                 <div class="flex items-center gap-1.5">
                     <template x-for="i in [1, 2, 3]" :key="i">
                         <div class="flex-1 h-1.5 rounded-full transition-colors duration-300" :class="i <= step ? 'bg-emerald-500' : 'bg-gray-200'"></div>
@@ -109,18 +109,18 @@
 
                 {{-- Slide 1: Contact Information --}}
                 <div x-ref="slide1" :class="slideCls(1)">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center gap-3 mb-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                    <div class="flex items-center gap-3 mb-4 lg:mb-6">
                         <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <i data-lucide="user" class="w-4 h-4 text-emerald-600"></i>
                         </div>
-                        <h2 class="text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.contact_info') }}</h2>
+                        <h2 class="text-base lg:text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.contact_info') }}</h2>
                     </div>
 
                     {{-- Auto-fill Suggestion Banner --}}
                     @if($user && !old('customer_name') && !old('customer_phone') && !old('customer_email'))
-                    <div x-show="useAccountInfo === null" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div x-show="useAccountInfo === null" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mb-4 p-3 lg:mb-5 lg:p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                             <div class="flex items-start gap-3 flex-1">
                                 <div class="w-9 h-9 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <i data-lucide="sparkles" class="w-4 h-4 text-emerald-600"></i>
@@ -150,10 +150,10 @@
                     </div>
                     @endif
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-5">
                         <div>
                             <label for="customer_name" class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('messages.full_name') }} <span class="text-red-500">*</span></label>
-                            <input type="text" id="customer_name" name="customer_name" value="{{ old('customer_name') }}" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. Amina Bello" x-ref="customerName" :class="fieldErrors.customer_name ? 'border-red-400 ring-2 ring-red-400' : ''">
+                            <input type="text" id="customer_name" name="customer_name" value="{{ old('customer_name') }}" required class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. Amina Bello" x-ref="customerName" :class="fieldErrors.customer_name ? 'border-red-400 ring-2 ring-red-400' : ''">
                             @error('customer_name')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
@@ -161,7 +161,7 @@
                         </div>
                         <div>
                             <label for="customer_phone" class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('messages.phone_number') }} <span class="text-red-500">*</span></label>
-                            <input type="tel" id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" required class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. 0801 234 5678" x-ref="customerPhone" :class="fieldErrors.customer_phone ? 'border-red-400 ring-2 ring-red-400' : ''">
+                            <input type="tel" id="customer_phone" name="customer_phone" value="{{ old('customer_phone') }}" required class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. 0801 234 5678" x-ref="customerPhone" :class="fieldErrors.customer_phone ? 'border-red-400 ring-2 ring-red-400' : ''">
                             @error('customer_phone')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
@@ -169,7 +169,7 @@
                         </div>
                         <div class="md:col-span-2">
                             <label for="customer_email" class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('messages.email') }} <span class="text-gray-400 font-normal">{{ __('messages.optional') }}</span></label>
-                            <input type="email" id="customer_email" name="customer_email" value="{{ old('customer_email') }}" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. amina@example.com" x-ref="customerEmail" :class="fieldErrors.customer_email ? 'border-red-400 ring-2 ring-red-400' : ''">
+                            <input type="email" id="customer_email" name="customer_email" value="{{ old('customer_email') }}" class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all" placeholder="e.g. amina@example.com" x-ref="customerEmail" :class="fieldErrors.customer_email ? 'border-red-400 ring-2 ring-red-400' : ''">
                             @error('customer_email')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
@@ -180,18 +180,18 @@
                 </div>
 
                 {{-- Slide 2: Delivery Method + Order Notes --}}
-                <div x-ref="slide2" class="space-y-6" :class="slideCls(2)">
+                <div x-ref="slide2" class="space-y-3 lg:space-y-6" :class="slideCls(2)">
                 {{-- Delivery Method --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center gap-3 mb-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                    <div class="flex items-center gap-3 mb-4 lg:mb-6">
                         <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <i data-lucide="truck" class="w-4 h-4 text-emerald-600"></i>
                         </div>
-                        <h2 class="text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.delivery_method') }}</h2>
+                        <h2 class="text-base lg:text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.delivery_method') }}</h2>
                     </div>
 
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all" :class="deliveryMethod === 'pickup' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
+                    <div class="space-y-2 lg:space-y-3">
+                        <label class="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 border-2 rounded-xl cursor-pointer transition-all" :class="deliveryMethod === 'pickup' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
                             <input type="radio" name="delivery_method" value="pickup" x-model="deliveryMethod" checked class="w-4 h-4 text-emerald-500 border-gray-300 focus:ring-emerald-500">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <i data-lucide="store" class="w-5 h-5 text-emerald-600"></i>
@@ -203,7 +203,7 @@
                             <span class="text-sm font-bold text-green-600">FREE</span>
                         </label>
 
-                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all" :class="deliveryMethod === 'delivery' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
+                        <label class="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 border-2 rounded-xl cursor-pointer transition-all" :class="deliveryMethod === 'delivery' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
                             <input type="radio" name="delivery_method" value="delivery" x-model="deliveryMethod" class="w-4 h-4 text-emerald-500 border-gray-300 focus:ring-emerald-500">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <i data-lucide="map-pin" class="w-5 h-5 text-emerald-600"></i>
@@ -220,7 +220,7 @@
                     @enderror
 
                     {{-- Delivery Address --}}
-                    <div x-show="deliveryMethod === 'delivery'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-5 space-y-4">
+                    <div x-show="deliveryMethod === 'delivery'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-4 space-y-3">
 
                         @if($deliverySettings['show_fee_selector'])
                         {{-- Delivery Location Selector (standard mode) --}}
@@ -231,7 +231,7 @@
                                     {{ __('messages.no_delivery_locations') }}
                                 </div>
                             @else
-                                <select name="delivery_location_id" id="delivery_location_id" x-model="selectedLocationId" @change="onLocationChange()" :required="deliveryMethod === 'delivery'" :class="fieldErrors.delivery_location_id ? 'border-red-400 ring-2 ring-red-400' : ''" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                                <select name="delivery_location_id" id="delivery_location_id" x-model="selectedLocationId" @change="onLocationChange()" :required="deliveryMethod === 'delivery'" :class="fieldErrors.delivery_location_id ? 'border-red-400 ring-2 ring-red-400' : ''" class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                                     <option value="">{{ __('messages.select_delivery_area') }}</option>
                                     @foreach($deliveryLocations as $loc)
                                         <option value="{{ $loc->id }}" data-cost="{{ $loc->cost }}">{{ $loc->name }} — ₦{{ number_format($loc->cost, 2) }}</option>
@@ -245,7 +245,7 @@
                         </div>
                         @else
                         {{-- Contact Agent Card (selector disabled mode) --}}
-                        <div class="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                        <div class="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
                             <div class="flex items-start gap-3 mb-3">
                                 <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <i data-lucide="headphones" class="w-4.5 h-4.5 text-blue-600"></i>
@@ -333,7 +333,7 @@
 
                         <div>
                             <label for="delivery_address" class="block text-sm font-semibold text-gray-700 mb-1.5">{{ __('messages.street_address') }} <span class="text-red-500">*</span></label>
-                            <textarea id="delivery_address" name="delivery_address" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none" placeholder="{{ __('messages.street_address_placeholder') }}" x-ref="deliveryAddress" :class="fieldErrors.delivery_address ? 'border-red-400 ring-2 ring-red-400' : ''">{{ old('delivery_address') }}</textarea>
+                            <textarea id="delivery_address" name="delivery_address" rows="2" class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none" placeholder="{{ __('messages.street_address_placeholder') }}" x-ref="deliveryAddress" :class="fieldErrors.delivery_address ? 'border-red-400 ring-2 ring-red-400' : ''">{{ old('delivery_address') }}</textarea>
                             @error('delivery_address')
                                 <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                             @enderror
@@ -356,30 +356,30 @@
                 </div>
 
                 {{-- Order Notes --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center gap-3 mb-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                    <div class="flex items-center gap-3 mb-3 lg:mb-4">
                         <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <i data-lucide="message-square" class="w-4 h-4 text-emerald-600"></i>
                         </div>
-                        <h2 class="text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.order_notes') }}</h2>
+                        <h2 class="text-base lg:text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.order_notes') }}</h2>
                         <span class="text-xs text-gray-400 font-normal">{{ __('messages.optional') }}</span>
                     </div>
-                    <textarea name="notes" rows="3" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none" placeholder="{{ __('messages.special_instructions') }}">{{ old('notes') }}</textarea>
+                    <textarea name="notes" rows="2" class="w-full px-4 py-2.5 lg:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all resize-none" placeholder="{{ __('messages.special_instructions') }}">{{ old('notes') }}</textarea>
                 </div>
                 </div>
 
                 {{-- Slide 3: Payment Method --}}
                 <div x-ref="slide3" :class="slideCls(3)">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div class="flex items-center gap-3 mb-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 lg:p-6">
+                    <div class="flex items-center gap-3 mb-4 lg:mb-6">
                         <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                             <i data-lucide="credit-card" class="w-4 h-4 text-emerald-600"></i>
                         </div>
-                        <h2 class="text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.payment_method') }}</h2>
+                        <h2 class="text-base lg:text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.payment_method') }}</h2>
                     </div>
 
-                    <div class="space-y-4">
-                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl transition-all" :class="deliveryMethod === 'pickup' ? (paymentMethod === 'cash_on_delivery' ? 'border-emerald-500 bg-emerald-50 cursor-pointer' : 'border-gray-200 hover:border-gray-300 cursor-pointer') : 'border-gray-100 bg-gray-50/50 opacity-60'">
+                    <div class="space-y-2 lg:space-y-4">
+                        <label class="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 border-2 rounded-xl transition-all" :class="deliveryMethod === 'pickup' ? (paymentMethod === 'cash_on_delivery' ? 'border-emerald-500 bg-emerald-50 cursor-pointer' : 'border-gray-200 hover:border-gray-300 cursor-pointer') : 'border-gray-100 bg-gray-50/50 opacity-60'">
                             <input type="radio" name="payment_method" value="cash_on_delivery" x-model="paymentMethod" :disabled="deliveryMethod !== 'pickup'" class="w-4 h-4 text-emerald-500 border-gray-300 focus:ring-emerald-500 disabled:opacity-50">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <i data-lucide="banknote" class="w-5 h-5" :class="deliveryMethod === 'pickup' ? 'text-emerald-600' : 'text-gray-400'"></i>
@@ -403,7 +403,7 @@
                             <p class="text-xs text-amber-700">Cash on Delivery is only available for store pickup orders. Please use Bank Transfer for delivery orders.</p>
                         </div>
 
-                        <label class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all" :class="paymentMethod === 'bank_transfer' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
+                        <label class="flex items-center gap-3 lg:gap-4 p-3 lg:p-4 border-2 rounded-xl cursor-pointer transition-all" :class="paymentMethod === 'bank_transfer' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'">
                             <input type="radio" name="payment_method" value="bank_transfer" x-model="paymentMethod" class="w-4 h-4 text-emerald-500 border-gray-300 focus:ring-emerald-500">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <i data-lucide="building" class="w-5 h-5 text-emerald-600"></i>
@@ -422,10 +422,10 @@
                     <p x-show="fieldErrors.payment_method" x-cloak class="text-xs text-red-500 mt-2" x-text="fieldErrors.payment_method"></p>
 
                     {{-- Bank Transfer Details --}}
-                    <div x-show="paymentMethod === 'bank_transfer'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-5 p-5 bg-purple-50 border border-purple-200 rounded-xl">
-                        <h3 class="text-sm font-semibold text-purple-800 mb-4">{{ __('messages.bank_transfer_details') }}</h3>
+                    <div x-show="paymentMethod === 'bank_transfer'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                        <h3 class="text-sm font-semibold text-purple-800 mb-3 lg:mb-4">{{ __('messages.bank_transfer_details') }}</h3>
                         @if($bankAccounts->isNotEmpty())
-                            <div class="space-y-4 text-sm">
+                            <div class="space-y-3 lg:space-y-4 text-sm">
                                 <p class="text-purple-700">{{ __('messages.bank_transfer_instructions') }}</p>
                                 @if($paymentSettings && $paymentSettings->bank_transfer_instructions)
                                     <p class="text-purple-800 whitespace-pre-line break-words">{{ $paymentSettings->bank_transfer_instructions }}</p>
@@ -434,7 +434,7 @@
                                     <span class="text-purple-700 font-medium">{{ __('messages.amount') }}</span>
                                     <span class="text-lg font-bold text-purple-900" x-text="'₦' + formatNumber(grandTotal)"></span>
                                 </div>
-                                <button type="button" @click="showBankAccounts = true" class="w-full flex items-center justify-center gap-2.5 py-4 bg-purple-600 hover:bg-purple-700 text-white font-bold text-base rounded-xl transition-colors shadow-lg shadow-purple-500/25">
+                                <button type="button" @click="showBankAccounts = true" class="w-full flex items-center justify-center gap-2.5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold text-base rounded-xl transition-colors shadow-lg shadow-purple-500/25">
                                     <i data-lucide="building" class="w-5 h-5"></i>
                                     {{ __('messages.view_accounts') }}
                                 </button>
@@ -444,7 +444,7 @@
                         @endif
 
                         {{-- Bank Receipt Upload --}}
-                        <div class="mt-5">
+                        <div class="mt-4">
                             <label class="block text-sm font-medium text-purple-700 mb-2">{{ __('messages.upload_receipt') }}</label>
                             <input type="file" name="bank_receipt" accept="image/*,.pdf" class="w-full px-4 py-3 text-sm border-2 border-dashed border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 transition-colors bg-white">
                             <p class="text-xs text-purple-600 mt-1">{{ __('messages.upload_receipt_desc') }}</p>
@@ -455,12 +455,12 @@
                     </div>
 
                     {{-- Payment Note --}}
-                    <div class="bg-blue-50 border border-blue-100 rounded-2xl p-5 mt-6">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="info" class="w-5 h-5 text-blue-500 mt-0.5 shrink-0"></i>
+                    <div class="bg-blue-50 border border-blue-100 rounded-2xl p-3 lg:p-4 mt-3 lg:mt-4">
+                        <div class="flex items-start gap-2 lg:gap-3">
+                            <i data-lucide="info" class="w-4 h-4 lg:w-5 lg:h-5 text-blue-500 mt-0.5 shrink-0"></i>
                             <div>
-                                <p class="text-sm font-semibold text-blue-800">{{ __('messages.payment_info') }}</p>
-                                <p class="text-sm text-blue-600 mt-1">{{ __('messages.payment_info_desc') }}</p>
+                                <p class="text-xs lg:text-sm font-semibold text-blue-800">{{ __('messages.payment_info') }}</p>
+                                <p class="text-xs lg:text-sm text-blue-600 mt-0.5 lg:mt-1">{{ __('messages.payment_info_desc') }}</p>
                             </div>
                         </div>
                     </div>
@@ -476,22 +476,22 @@
                      matches the desktop summary panel, where the two buttons are
                      already full-width and stacked. items-stretch makes Back
                      span the full width without touching its row-mode size. --}}
-                <div class="lg:hidden mt-5 flex gap-3"
+                <div class="lg:hidden mt-4 flex gap-3"
                     :class="step === 3 ? 'flex-col items-stretch' : 'flex-row items-center'">
                     <button type="button" x-show="step > 1" @click="prev()"
-                        class="flex items-center justify-center gap-1.5 px-5 py-3.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all">
+                        class="flex items-center justify-center gap-1.5 px-5 py-3 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 active:scale-[0.98] transition-all">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i>
                         {{ __('messages.back') }}
                     </button>
 
                     <button type="button" x-show="step < 3" @click="next()"
-                        class="flex-1 flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all">
+                        class="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all">
                         {{ __('messages.next') }}
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </button>
 
                     <button type="submit" x-show="step === 3" :disabled="submitting"
-                        class="flex items-center justify-center gap-2 py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-70 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all">
+                        class="flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-70 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all">
                         <svg x-show="submitting" class="animate-spin w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                         <span class="truncate" x-text="'{{ __('messages.place_order') }} — ₦' + formatNumber(grandTotal)"></span>
                     </button>
@@ -501,7 +501,7 @@
             {{-- Right: Order Summary (desktop only; mobile uses the sticky bar below) --}}
             <div class="hidden lg:block lg:w-[40%]">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 lg:sticky lg:top-24">
-                    <h2 class="text-lg font-bold text-gray-900 mb-6" style="font-family:'Poppins',sans-serif;">{{ __('messages.your_order') }}</h2>
+                    <h2 class="text-base lg:text-lg font-bold text-gray-900 mb-6" style="font-family:'Poppins',sans-serif;">{{ __('messages.your_order') }}</h2>
 
                     @include('components.order-summary-body')
 
@@ -576,7 +576,7 @@
                 <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden" @click.stop>
                     <div class="flex items-center justify-between p-5 border-b border-gray-100">
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.bank_accounts_popup_title') }}</h3>
+                            <h3 class="text-base lg:text-lg font-bold text-gray-900" style="font-family:'Poppins',sans-serif;">{{ __('messages.bank_accounts_popup_title') }}</h3>
                             <p class="text-xs text-gray-500 mt-0.5">{{ __('messages.bank_transfer_instructions') }}</p>
                         </div>
                         <button @click="showBankAccounts = false" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">

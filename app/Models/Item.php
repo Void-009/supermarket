@@ -96,6 +96,23 @@ class Item extends Model
         return in_array((int) $this->category_id, Category::activeCategoryTreeIds(), true);
     }
 
+    /**
+     * Items that have no image of their own AND cannot borrow one from their
+     * parent. This matches the effective image logic in getImageUrlAttribute():
+     * variations fall back to the parent's image, so a variation only counts
+     * as missing when the parent has no image either.
+     */
+    public function scopeWithoutImage(Builder $query): Builder
+    {
+        return $query
+            ->where(function (Builder $q) {
+                $q->whereNull('image_url')->orWhere('image_url', '');
+            })
+            ->whereDoesntHave('parentItem', function (Builder $q) {
+                $q->whereNotNull('image_url')->where('image_url', '!=', '');
+            });
+    }
+
     public function scopeSearchable(Builder $query, string $search): Builder
     {
         return $query->where(function (Builder $q) use ($search) {

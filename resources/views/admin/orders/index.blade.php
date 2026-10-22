@@ -34,7 +34,7 @@
             <a href="{{ route('admin.orders.index', $key ? ['status' => $key] : []) }}"
                 class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-xl transition-colors {{ $active ? 'bg-emerald-500 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50' }}">
                 {{ $label }}
-                <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full {{ $active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500' }}">{{ $count }}</span>
+                <span id="order-count-{{ $key === '' ? 'all' : $key }}" class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full {{ $active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500' }}">{{ $count }}</span>
             </a>
         @endforeach
     </div>
@@ -76,66 +76,8 @@
                         <th class="px-2.5 py-3 text-center font-medium text-gray-500">Action</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-50">
-                    @forelse($orders as $order)
-                    <tr class="hover:bg-gray-50/50 transition-colors">
-                        <td class="px-2.5 py-4 w-10">
-                            <input type="checkbox" :value="{{ $order->id }}" x-model="selectedIds" @change="allSelected = selectedIds.length === {{ $orders->total() }}" class="w-4 h-4 text-emerald-500 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer">
-                        </td>
-                        <td class="px-2.5 py-4 font-semibold text-gray-900 whitespace-nowrap">#{{ $order->id }}</td>
-                        <td class="px-2.5 py-4 text-gray-700 max-w-[140px] break-words">{{ $order->customer_name ?? 'N/A' }}</td>
-                        <td class="px-2.5 py-4 text-gray-500 max-w-[120px] break-words">{{ $order->customer_phone ?? 'N/A' }}</td>
-                        <td class="px-2.5 py-4 text-gray-500 whitespace-nowrap">{{ $order->items->count() }}</td>
-                        <td class="px-2.5 py-4 font-medium text-gray-900 whitespace-nowrap">₦{{ number_format($order->total_amount, 2) }}</td>
-                        <td class="px-2.5 py-4 whitespace-nowrap">
-                            @php
-                                $statusColors = [
-                                    'new' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                    'processing' => 'bg-yellow-50 text-yellow-700 border-yellow-200',
-                                    'paid' => 'bg-green-50 text-green-700 border-green-200',
-                                    'shipped' => 'bg-purple-50 text-purple-700 border-purple-200',
-                                    'delivered' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                    'cancelled' => 'bg-red-50 text-red-700 border-red-200',
-                                ];
-                                $colorClass = $statusColors[$order->status] ?? 'bg-gray-50 text-gray-700 border-gray-200';
-                            @endphp
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border {{ $colorClass }}">
-                                {{ ucfirst($order->status) }}
-                            </span>
-                        </td>
-                        <td class="px-2.5 py-4 text-gray-600 max-w-[120px] break-words">{{ $order->processor?->name ?? '—' }}</td>
-                        <td class="px-2.5 py-4 text-gray-500 whitespace-nowrap">{{ $order->created_at->format('M d, Y') }}</td>
-                        <td class="px-2.5 py-4 text-center whitespace-nowrap">
-                            <div class="inline-flex items-center gap-1.5">
-                                @php
-                                    // Row-level shortcut so staff can answer a
-                                    // customer without opening the order first.
-                                    $rowWa = \App\Services\WhatsappService::link(
-                                        $order->customer_phone,
-                                        \App\Services\WhatsappService::orderMessage($order, auth()->user()?->name)
-                                    );
-                                @endphp
-                                @if($rowWa)
-                                <a href="{{ $rowWa }}" target="_blank" rel="noopener noreferrer" title="Chat on WhatsApp"
-                                    class="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors shadow-sm">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                    WhatsApp
-                                </a>
-                                @endif
-                                <a href="{{ route('admin.orders.show', $order) }}" class="inline-flex items-center gap-1 px-2 py-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200">
-                                    <i data-lucide="eye" class="w-3 h-3"></i> View
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="px-6 py-12 text-center">
-                            <i data-lucide="receipt" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
-                            <p class="text-sm text-gray-500">No orders found.</p>
-                        </td>
-                    </tr>
-                    @endforelse
+                <tbody id="orders-body" class="divide-y divide-gray-50">
+                    @include('admin.orders._rows', ['orders' => $orders])
                 </tbody>
             </table>
         </div>
@@ -157,12 +99,18 @@ function bulkManager() {
 
         toggleAll(e) {
             if (e.target.checked) {
-                this.selectedIds = @js($orders->pluck('id')->toArray());
+                this.selectedIds = (window.__orderPageIds || @js($orders->pluck('id')->toArray())).slice();
                 this.allSelected = true;
             } else {
                 this.selectedIds = [];
                 this.allSelected = false;
             }
+        },
+
+        syncAllSelected() {
+            const ids = window.__orderPageIds || [];
+            this.allSelected = ids.length > 0
+                && ids.every((id) => this.selectedIds.map(Number).includes(Number(id)));
         },
 
         async bulkAction(action) {
@@ -192,6 +140,165 @@ function bulkManager() {
 </script>
 
 <script>
+    // Keep the orders table live: listen on the admin.orders channel and also
+    // poll, so new orders appear even when the websocket server or the queue
+    // worker is unavailable.
+    (function () {
+        const endpoint = '{{ route('admin.orders.live') }}';
+        const statusFilter = @json((string) request('status', ''));
+        const searchFilter = @json((string) request('search', ''));
+        const currentPage = {{ (int) request('page', 1) }};
+        let latestId = {{ (int) $latestId }};
+        let lastFingerprint = null;
+        let initialized = false;
+        let refreshing = false;
+
+        let audioCtx = null;
+        function playSound() {
+            try {
+                const Ctx = window.AudioContext || window.webkitAudioContext;
+                if (!Ctx) return;
+                if (!audioCtx) audioCtx = new Ctx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+                [0, 0.18].forEach(function (offset, i) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = i === 0 ? 880 : 1320;
+                    gain.gain.setValueAtTime(0.0001, now + offset);
+                    gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
+                    osc.connect(gain).connect(audioCtx.destination);
+                    osc.start(now + offset);
+                    osc.stop(now + offset + 0.18);
+                });
+            } catch (e) {}
+        }
+
+        function updateCounts(data) {
+            const values = Object.assign({ all: data.total_all }, data.counts || {});
+            Object.keys(values).forEach(function (key) {
+                const el = document.getElementById('order-count-' + key);
+                if (!el) return;
+                const next = Number(values[key]).toLocaleString();
+                if (el.textContent !== next) el.textContent = next;
+            });
+        }
+
+        function refreshPageIds() {
+            window.__orderPageIds = Array.from(
+                document.querySelectorAll('#orders-body input[type="checkbox"]')
+            ).map(function (cb) { return parseInt(cb.value, 10); })
+             .filter(function (id) { return !Number.isNaN(id); });
+        }
+
+        function fingerprint(data) {
+            const counts = Object.keys(data.counts || {}).sort().map(function (key) {
+                return key + ':' + data.counts[key];
+            }).join(',');
+            return [data.latest_id, data.total_all, counts, data.rows_version].join('|');
+        }
+
+        function renderRows(data) {
+            const tbody = document.getElementById('orders-body');
+            if (!tbody) return;
+
+            const nextFingerprint = fingerprint(data);
+
+            if (initialized && nextFingerprint === lastFingerprint) {
+                refreshPageIds();
+                return;
+            }
+
+            // Never wipe the table while someone is ticking rows.
+            if (tbody.querySelector('input[type="checkbox"]:checked')) return;
+
+            initialized = true;
+            lastFingerprint = nextFingerprint;
+            tbody.innerHTML = data.rows_html || '';
+
+            if (window.Alpine && typeof window.Alpine.initTree === 'function') {
+                window.Alpine.initTree(tbody);
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            refreshPageIds();
+        }
+
+        function notify(order) {
+            if (!order) return;
+            if (typeof showToast === 'function') {
+                showToast('New order #' + order.id + ' from ' + (order.customer_name || 'a customer'), 'success');
+            }
+            playSound();
+        }
+
+        async function refresh(notifyNew) {
+            if (refreshing || document.hidden) return;
+            refreshing = true;
+            try {
+                const params = new URLSearchParams();
+                if (statusFilter) params.set('status', statusFilter);
+                if (searchFilter) params.set('search', searchFilter);
+                if (currentPage > 1) params.set('page', currentPage);
+
+                const url = endpoint + (params.toString() ? '?' + params.toString() : '');
+                const res = await fetch(url, {
+                    headers: { 'Accept': 'application/json' },
+                    cache: 'no-store',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+
+                updateCounts(data);
+                renderRows(data);
+
+                if (Number(data.latest_id) > latestId) {
+                    latestId = Number(data.latest_id);
+                    if (notifyNew) notify(data.latest_order);
+                }
+            } catch (e) {
+                // Silent: polling will retry.
+            } finally {
+                refreshing = false;
+            }
+        }
+
+        function hookEcho() {
+            if (typeof window.Echo === 'undefined') {
+                setTimeout(hookEcho, 500);
+                return;
+            }
+
+            window.Echo.private('admin.orders').listen('.OrderCreated', function (e) {
+                const order = e.order || e;
+                const id = Number(order.id) || 0;
+                if (id > latestId) {
+                    latestId = id;
+                    notify(order);
+                }
+                refresh(false);
+            });
+        }
+
+        function start() {
+            refreshPageIds();
+            refresh(false);
+            hookEcho();
+            setInterval(function () { refresh(true); }, 5000);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', start);
+        } else {
+            start();
+        }
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) refresh(false);
+        });
+    })();
+
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof lucide !== 'undefined') lucide.createIcons();
     });
